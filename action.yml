@@ -1,0 +1,31 @@
+name: 'Test custom action'
+description: 'An action to publish generated podspecs'
+inputs:
+  generated-files-directory:
+    description: 'The directory in which podspecs are generated for RPC definitions'
+    required: true
+  pod-repository:
+    description: 'The repository in which generated podspecs would be pushed'
+    required: true
+  PAT:
+    description: 'PAT to access the private repository'
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - run: git clone https://${{inputs.PAT}}:x-oauth-basic@github.com/${{inputs.pod-repository}}.git --branch master ./Actions-Pod
+      shell: bash
+    - run: rsync -r /tmp/swiftgen-generated/ ./Actions-Pod/
+      shell: bash
+    - run: cd ./Actions-Pod
+      shell: bash
+    - run: git config user.name ${{github.actor}}
+      shell: bash
+    - run: git config user.email ${{github.actor}}@users.noreply.github.com
+      shell: bash
+    - run: git add .
+      shell: bash
+    - run: git commit -am "Update Podspecs based on RPC changes"
+      shell: bash
+    - run: git push git@github.com/${{inputs.pod-repository}}.git master:master
+      shell: bash
